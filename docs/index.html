@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weiterleitung</title>
+    <style>
+        :root {
+            --background-color: #f4f7f9;
+            --card-background-color: #ffffff;
+            --text-color: #333;
+            --subtle-text-color: #777;
+            --error-color: #e74c3c;
+            --link-color: #3498db;
+            --border-color: #e0e0e0;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, system-ui;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 700px;
+            margin: 20px;
+        }
+
+        .initial-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.3s ease;
+        }
+
+        .initial-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .visualization {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
+        .line-and-text-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 30px;
+        }
+
+        .line {
+            width: 200px;
+            height: 6px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            background-size: 200% 100%;
+            animation: flow 1.5s linear infinite;
+            border-radius: 3px;
+            margin-top: 8px;
+        }
+
+        @keyframes flow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .line.error {
+            background: var(--error-color);
+            animation: none;
+        }
+
+        .status {
+            font-size: 1em;
+            font-weight: 400;
+            color: var(--subtle-text-color);
+        }
+
+        .info-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
+        }
+
+        .info-box.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .info-box .content-wrapper {
+            max-width: 600px;
+            padding: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: var(--card-background-color);
+            box-shadow: var(--card-shadow);
+        }
+
+        .info-box h2 {
+            margin-top: 0;
+            color: var(--error-color);
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: var(--subtle-text-color);
+        }
+        
+        .info-box p.main-message {
+            color: var(--text-color);
+        }
+
+        .info-box a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .info-box a:hover {
+            text-decoration: underline;
+            color: #2980b9;
+        }
+
+        .paragraph-container.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="initial-content" id="initial-content">
+    <div class="container">
+        <div class="visualization">
+            <img src="images/server.png" alt="Server Icon" class="icon">
+            <div class="line-and-text-wrapper">
+                <p class="status" id="status-text">Verbinde mit Dienst...</p>
+                <div class="line" id="connection-line"></div>
+            </div>
+            <img src="images/client.png" alt="Client Icon" class="icon">
+        </div>
+    </div>
+</div>
+
+<div class="info-box" id="info-box">
+    <div class="content-wrapper">
+        <h2 id="info-box-title"></h2>
+        <p class="main-message" id="info-box-main-message"></p>
+        <div class="paragraph-container" id="github-link-container">
+            <p>
+                Um diese Funktion nutzen zu können, musst du den Dienst auf deinem System einrichten. Eine Anleitung und die benötigten Dateien findest du im GitHub-Repository:
+                <a href="https://github.com/mgiesen/Browser-File-Link" target="_blank">
+                    https://github.com/mgiesen/Browser-File-Link
+                </a>
+            </p>
+        </div>
+        <div class="paragraph-container" id="restart-service-container">
+            <p>
+                Bitte stelle sicher, dass der Dienst gestartet ist, bevor du es erneut versuchst.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        /**
+         * Configuration for the local service endpoint.
+         * @type {string}
+         */
+        const BASE_URL = 'http://localhost:55555';
+
+        /**
+         * Timeout for the connection attempt in milliseconds.
+         * @type {number}
+         */
+        const FETCH_TIMEOUT = 2000;
+
+        // --- DOM Element References ---
+        const initialContent = document.getElementById('initial-content');
+        const statusText = document.getElementById('status-text');
+        const connectionLine = document.getElementById('connection-line');
+        const infoBox = document.getElementById('info-box');
+        const infoBoxTitle = document.getElementById('info-box-title');
+        const infoBoxMainMessage = document.getElementById('info-box-main-message');
+        const githubLinkContainer = document.getElementById('github-link-container');
+        const restartServiceContainer = document.getElementById('restart-service-container');
+
+        /**
+         * Updates the UI to show a connection error message.
+         * Hides the initial loading animation and displays the info box.
+         * @param {string} title - The title for the error message box.
+         * @param {string} message - The main error description.
+         * @param {object} options - Optional flags to show/hide specific info paragraphs.
+         * @param {boolean} [options.showGithubLink=true] - Whether to show the GitHub link.
+         * @param {boolean} [options.showRestartInfo=true] - Whether to show the service restart hint.
+         */
+        const showErrorMessage = (title, message, { showGithubLink = true, showRestartInfo = true } = {}) => {
+            initialContent.classList.add('hidden');
+            connectionLine.classList.add('error');
+
+            infoBoxTitle.textContent = title;
+            infoBoxMainMessage.innerHTML = message; // Use innerHTML to allow for simple formatting if needed.
+            
+            githubLinkContainer.classList.toggle('hidden', !showGithubLink);
+            restartServiceContainer.classList.toggle('hidden', !showRestartInfo);
+
+            infoBox.classList.add('visible');
+        };
+
+        /**
+         * Main function to initiate the connection to the local service.
+         * It checks for the service's health and redirects if available,
+         * otherwise, it displays an appropriate error message.
+         */
+        const initiateConnection = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const openPath = urlParams.get('open_path');
+
+            if (!openPath) {
+                showErrorMessage(
+                    'Parameter fehlt',
+                    'Es wurde kein Dateipfad zum Öffnen übergeben. Bitte stelle sicher, dass die URL einen `open_path`-Parameter enthält',
+                    { showGithubLink: false, showRestartInfo: false }
+                );
+                return;
+            }
+
+            const healthUrl = `${BASE_URL}/health`;
+            const targetUrl = `${BASE_URL}/?open_path=${encodeURIComponent(openPath)}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+            try {
+                const response = await fetch(healthUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    statusText.textContent = 'Dienst gefunden, leite weiter...';
+                    window.location.href = targetUrl;
+                } else {
+                    throw new Error(`Service responded with status: ${response.status}`);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.error('Service connection failed:', error.name, error.message);
+                showErrorMessage(
+                    'Verbindung zum Dienst fehlgeschlagen',
+                    'Für das Öffnen lokaler Dateien oder Ordner ist ein spezieller Dienst erforderlich. Dieser Dienst empfängt Anfragen von deinem Browser und leitet sie an dein lokales Dateisystem weiter. Es scheint, als sei der Dienst nicht erreichbar. Bitte überprüfe, ob er korrekt installiert ist und ausgeführt wird.',
+                    {
+                        showGithubLink: true,
+                        showRestartInfo: error.name === 'AbortError' ? false : true 
+                    }
+                );
+            }
+        };
+
+        // --- Start the process ---
+        initiateConnection();
+    });
+</script>
+
+</body>
+</html>

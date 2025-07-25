@@ -1,15 +1,31 @@
 # File: BrowserFileLinkService.ps1
-# Beschreibung: Ein einfaches PowerShell-Skript, das einen lokalen HTTP-Server startet, um lokale UNC-Pfade über den Browser zu öffnen.
-# Repository: https://github.com/mgiesen/Browser-File-Link
 # Autor: mgiesen
-# Beispiel URL: http://localhost:55555/?open_path=C:/Users/gima
+# Repository: https://github.com/mgiesen/Browser-File-Link
+#
+# Beschreibung: 
+# Lokaler HTTP-Server zum Öffnen von Datei- und Ordnerpfaden im Explorer per HTTP-Aufruf.
+#
+# Anwendungsfälle:
+# 1. Direkter Aufruf: 'http://localhost:55555/?open_path=C:/...' 
+#    kann direkt im Browser aufgerufen werden.
+#
+# 2. Redirect-Seite: Dient als Vermittler, um Nutzern ohne lokal ausgeführten Dienst 
+#    eine Hilfestellung zu geben.
 
+# --- KONFIGURATION ---
+
+# Version des Skriptes
 $version = "1.0.0"
+
+# Der Port, auf dem der lokale Dienst lauscht.
 $port = 55555
 
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://localhost:$port/")
+# Die Herkunft (Origin) der Redirect-Webseite, die auf den Dienst zugreifen darf.
+# Dies ist eine CORS-Sicherheitsmaßnahme. Direkte Aufrufe aus dem Browser (ohne Origin-Header)
+# sind immer erlaubt.
+$allowedOrigin = "https://mgiesen.github.io"
 
+# HTML-Vorlage für die Antwortseite.
 $htmlTemplate = @"
 <!DOCTYPE html>
 <html>
@@ -23,79 +39,107 @@ $htmlTemplate = @"
         .footer {{ margin-top: 30px; font-size: 0.8em; color: #888; }}
     </style>
     <script type="text/javascript">
-        // Close this window after a short delay
-        setTimeout(function() {{ window.close(); }}, 0);
+        // Schließt dieses Fenster nach einer kurzen Verzögerung.
+        setTimeout(function() {{ window.close(); }}, 1500);
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Browser File Link</h1>
         <p class="status">&raquo;{0}&laquo;</p>
-        <p class="note">Dieses Fenster schlie&szlig;t sich automatisch</p>
+        <p class="note">Dieses Fenster schlie&szlig;t sich automatisch.</p>
         <p class="footer">&copy; mgiesen | v$version | <a href="https://github.com/mgiesen/Browser-File-Link" target="_blank">GitHub</a></p>
     </div>
 </body>
 </html>
 "@ 
 
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public class Win32 {
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-}
-"@ -Namespace User32
+# --- HAUPTPROGRAMM ---
 
 try {
+    $listener = New-Object System.Net.HttpListener
+    $listener.Prefixes.Add("http://localhost:$port/")
     $listener.Start()
-    while ($true) {
+
+    Write-Host "Dienst gestartet auf http://localhost:$port"
+    Write-Host "Anfragen von der Webseite '$allowedOrigin' sind via CORS erlaubt."
+
+    while ($listener.IsListening) {
         $context = $listener.GetContext()
         $request = $context.Request
         $response = $context.Response
 
-        $query = $request.QueryString
-        $openPath = $query["open_path"]
+        # CORS-Prüfung: Blockiert Anfragen von unerlaubten Webseiten.
+        $requestOrigin = $request.Headers["Origin"]
+        if ($requestOrigin -and $requestOrigin -ne $allowedOrigin) {
+            Write-Warning "Anfrage von unerlaubter Herkunft '$requestOrigin' blockiert."
+            $response.StatusCode = 403 # Forbidden
+            $response.OutputStream.Close()
+            continue
+        }
 
-        $response.StatusCode = 200
-        $statusText = "Kein Pfad angegeben. Bitte verwenden Sie den Query-Parameter 'open_path'."
+        # Setzt den CORS-Header für gültige Antworten.
+        $response.AddHeader("Access-Control-Allow-Origin", $allowedOrigin)
 
-        if ($openPath) {
+        # Behandelt CORS Preflight-Anfragen (OPTIONS).
+        if ($request.HttpMethod -eq "OPTIONS") {
+            $response.AddHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
+            $response.AddHeader("Access-Control-Allow-Headers", "Content-Type")
+            $response.StatusCode = 204 # No Content
+            $response.OutputStream.Close()
+            continue
+        }
+
+        # --- ANFRAGE-ROUTING ---
+
+        if ($request.Url.AbsolutePath -eq "/health") {
+            $response.StatusCode = 200
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes("OK")
+            $response.ContentLength64 = $buffer.Length
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        }
+        elseif ($request.Url.Query -like "*open_path=*") {
+            $openPath = $request.QueryString["open_path"]
+            $statusText = ""
+
             try {
-                if (Test-Path $openPath) {
-                    $command = "Start-Process -FilePath explorer.exe -ArgumentList `"$openPath`""
-                    Start-Process powershell.exe -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"$command`""
-                    
-                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet"
+                if (Test-Path -LiteralPath $openPath) {
+                    Start-Process -FilePath "explorer.exe" -ArgumentList $openPath
+                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
                 }
                 else {
-                    $statusText = "Der Pfad existiert nicht"
+                    $statusText = "Fehler: Der angegebene Pfad existiert nicht."
+                    $response.StatusCode = 404 # Not Found
                 }
             }
             catch {
                 $statusText = "Fehler beim &Ouml;ffnen des Pfads: $($_.Exception.Message)"
+                $response.StatusCode = 500 # Internal Server Error
             }
+            
+            $html = [string]::Format($htmlTemplate, $statusText)
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
+            $response.ContentType = "text/html; charset=utf-8"
+            $response.ContentLength64 = $buffer.Length
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        }
+        else {
+            $response.StatusCode = 400 # Bad Request
+            $statusText = "Ungültige Anfrage. Bitte benutze '?open_path=...'"
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($statusText)
+            $response.ContentLength64 = $buffer.Length
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
         }
         
-        try {
-            $html = [string]::Format($htmlTemplate, $statusText)
-            $response.ContentType = "text/html; charset=utf-8"
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
-            $response.ContentLength64 = $buffer.Length
-            $response.OutputStream.Write($buffer, 0, $buffer.Length)
-            $response.OutputStream.Close()
-        }
-        catch {
-            $fallbackMessage = "Browser-File-Link Service hatte einen kritischer Fehler bei der Generierung der Antwort: $($_.Exception.Message)"
-            $response.ContentType = "text/plain; charset=utf-8"
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($fallbackMessage)
-            $response.ContentLength64 = $buffer.Length
-            $response.OutputStream.Write($buffer, 0, $buffer.Length)
-            $response.OutputStream.Close()
-        }
+        $response.OutputStream.Close()
     }
 }
+catch {
+    Write-Error "Ein kritischer Fehler ist aufgetreten: $($_.Exception.Message)"
+}
 finally {
-    $listener.Stop()
+    if ($listener -and $listener.IsListening) {
+        $listener.Stop()
+        Write-Host "Dienst wurde beendet."
+    }
 }
