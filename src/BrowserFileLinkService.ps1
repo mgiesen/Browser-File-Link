@@ -22,12 +22,16 @@ $htmlTemplate = @"
         .note {{ color: #666; font-size: 0.9em; }}
         .footer {{ margin-top: 30px; font-size: 0.8em; color: #888; }}
     </style>
+    <script type="text/javascript">
+        // Close this window after a short delay
+        setTimeout(function() {{ window.close(); }}, 0);
+    </script>
 </head>
 <body>
     <div class="container">
         <h1>Browser File Link</h1>
         <p class="status">&raquo;{0}&laquo;</p>
-        <p class="note">Du kannst dieses Fenster nun schlie&szlig;en</p>
+        <p class="note">Dieses Fenster schlie&szlig;t sich automatisch</p>
         <p class="footer">&copy; mgiesen | v$version | <a href="https://github.com/mgiesen/Browser-File-Link" target="_blank">GitHub</a></p>
     </div>
 </body>
@@ -63,10 +67,10 @@ try {
                     $command = "Start-Process -FilePath explorer.exe -ArgumentList `"$openPath`""
                     Start-Process powershell.exe -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"$command`""
                     
-                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
+                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet"
                 }
                 else {
-                    $statusText = "Der Pfad existiert nicht."
+                    $statusText = "Der Pfad existiert nicht"
                 }
             }
             catch {
