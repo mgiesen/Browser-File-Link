@@ -16,7 +16,7 @@ Wichtig: Damit die Links funktionieren, muss der Dienst **dauerhaft auf jedem Cl
 
 ### Autostart einrichten (empfohlene Methode)
 
-Für die einfache Integration in den Autostart empfehlen wir die mitgelieferte Datei `Enable Autostart.bat`. Diese erstellt eine Verknüpfung zu einem versteckt startenden Dienstskript im Autostart-Ordner des aktuellen Benutzers.
+Für die einfache Integration in den Autostart empfehlen wir die mitgelieferte Datei `Autostart.bat`. Diese erstellt eine Verknüpfung zu einem versteckt startenden Dienstskript im Autostart-Ordner des aktuellen Benutzers.
 
 **Vorteile dieser Methode:**
 
@@ -24,7 +24,7 @@ Für die einfache Integration in den Autostart empfehlen wir die mitgelieferte D
 * Kompatibel mit den meisten Unternehmensrichtlinien
 * Der Dienst startet unauffällig im Hintergrund bei jedem Windows-Login
 
-Nach der Ausführung von `Enable Autostart.bat` wird der Autostart-Ordner geöffnet, sodass du die Verknüpfung direkt kontrollieren kannst.
+Nach der Ausführung von `Autostart.bat` wird der Autostart-Ordner geöffnet, sodass du die Verknüpfung direkt kontrollieren kannst.
 
 ## Einrichtung und Verwendung
 
@@ -36,7 +36,7 @@ Nach der Ausführung von `Enable Autostart.bat` wird der Autostart-Ordner geöff
    ```
 
 2. **Aktiviere den Autostart:**
-   Führe `Enable Autostart.bat` per Doppelklick aus, um die Autostart-Verknüpfung einzurichten.
+   Führe `Autostart.bat` per Doppelklick aus, um die Autostart-Verknüpfung einzurichten.
 
 3. **Verwende die Links:**
    Erstelle Links in deiner gewünschten Anwendung (z.B. MS Teams, SharePoint) im Format:

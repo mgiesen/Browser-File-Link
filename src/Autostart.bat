@@ -1,5 +1,5 @@
 @echo off
-set "VBS_NAME=StartBrowserFileLinkService.vbs"
+set "VBS_NAME=Start Service.vbs"
 set "LINK_NAME=Browser File Link Service.lnk"
 set "TARGET=%~dp0%VBS_NAME%"
 set "AUTOSTART=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
