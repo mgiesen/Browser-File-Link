@@ -187,7 +187,7 @@
         <p class="main-message" id="info-box-main-message"></p>
         <div class="paragraph-container" id="github-link-container">
             <p>
-                Um diese Funktion nutzen zu können, musst du den Dienst auf deinem System einrichten. Eine Anleitung und die benötigten Dateien findest du im GitHub-Repository:
+                Eine Anleitung und die benötigten Dateien findest du im GitHub-Repository:
                 <a href="https://github.com/mgiesen/Browser-File-Link" target="_blank">
                     https://github.com/mgiesen/Browser-File-Link
                 </a>
@@ -285,7 +285,7 @@
                 console.error('Service connection failed:', error.name, error.message);
                 showErrorMessage(
                     'Verbindung zum Dienst fehlgeschlagen',
-                    'Für das Öffnen lokaler Dateien oder Ordner ist ein spezieller Dienst erforderlich. Dieser Dienst empfängt Anfragen von deinem Browser und leitet sie an dein lokales Dateisystem weiter. Es scheint, als sei der Dienst nicht erreichbar. Bitte überprüfe, ob er korrekt installiert ist und ausgeführt wird.',
+                    'Um lokale Dateien oder Ordner aus dem Browser zu öffnen, muss der lokale Dienst »Browser-File-Link« aktiv sein. Dieser scheint derzeit nicht erreichbar. Bitte prüfe, ob er korrekt installiert und gestartet ist.',
                     {
                         showGithubLink: true,
                         showRestartInfo: error.name === 'AbortError' ? false : true 
