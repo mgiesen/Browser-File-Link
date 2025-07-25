@@ -104,7 +104,17 @@ try {
 
             try {
                 if (Test-Path -LiteralPath $openPath) {
-                    Start-Process -FilePath "explorer.exe" -ArgumentList $openPath
+                    # Da die Ausführung des Skriptes im Hintergrund erfolgt, muss ein neuer PowerShell-Prozess gestartet werden, um den Explorer im Vordergrund zu öffnen.
+                    # Die Powershell öffnet langsamer als die CMD, behandelt aber relative UNC-Pfade sicherer.
+                    $command = "& {
+                        Write-Host 'Der Aufruf des Dateipfades wird vorbereitet...';
+                        Start-Process explorer.exe -ArgumentList \`"$openPath\`";
+                        Start-Sleep -Seconds 2
+                    }"
+
+                    # Startet einen neuen PowerShell-Prozess ohne Laden des Benutzerprofils (-NoProfile),
+                    Start-Process "powershell.exe" -ArgumentList "-NoProfile -Command $command"
+
                     $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
                 }
                 else {
