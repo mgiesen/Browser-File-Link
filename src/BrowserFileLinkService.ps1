@@ -7,12 +7,6 @@
 $version = "1.0.0"
 $port = 55555
 
-$mutexName = "Global\BrowserFileLinkServiceMutex"
-$mutex = New-Object System.Threading.Mutex($false, $mutexName, [ref]$createdNew)
-if (-not $createdNew) {
-    exit
-}
-
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
 
@@ -100,6 +94,4 @@ try {
 }
 finally {
     $listener.Stop()
-    $mutex.ReleaseMutex()
-    $mutex.Dispose()
 }
