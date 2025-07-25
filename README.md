@@ -1,61 +1,75 @@
 # Browser-File-Link: Lokale Dateipfade einfach über den Browser öffnen
 
-In vielen Unternehmensumgebungen ist es eine Herausforderung, **direkt von Webanwendungen oder Dokumenten auf lokale Dateipfade** (z.B. auf einem Firmen-Fileserver) zuzugreifen. Browser blockieren aus Sicherheitsgründen oft das direkte Öffnen von `file://` URIs, was die Integration von internen Ressourcen erschwert.
+In vielen Unternehmensumgebungen ist es eine Herausforderung, direkt von Webanwendungen oder Dokumenten auf lokale Dateipfade (z.B. auf einem Firmen-Fileserver) zuzugreifen. Browser blockieren aus Sicherheitsgründen oft das direkte Öffnen von `file://`-URIs, was die Integration von internen Ressourcen erschwert.
 
-Der **Browser-File-Link** ist eine schlanke PowerShell-Lösung, die genau dieses Problem umgeht. Sie startet einen einfachen, lokalen HTTP-Server, der als Brücke zwischen deinem Browser und deinem lokalen Dateisystem fungiert. So kannst du beispielsweise **Projektordner, Dokumente oder Tools, die auf einem Netzlaufwerk oder Fileserver liegen, bequem aus Anwendungen wie Microsoft Teams, SharePoint-Listen oder internen Webseiten heraus öffnen.**
+**Browser-File-Link** ist eine schlanke PowerShell-Lösung, die genau dieses Problem umgeht. Sie startet einen einfachen lokalen HTTP-Server, der als Brücke zwischen deinem Browser und deinem lokalen Dateisystem fungiert. So kannst du Projektordner, Dokumente oder Tools, die auf einem Netzlaufwerk oder Fileserver liegen, bequem aus Anwendungen wie Microsoft Teams, SharePoint-Listen oder internen Webseiten heraus öffnen.
 
-![Browser-File-Link Funktionsweise](readme/ms-lists-example.png)
+## Funktionsweise & Anwendungsfälle
 
-## Funktionsweise
+Das Skript startet einen HTTP-Listener auf deinem PC (standardmäßig Port `55555`). Je nachdem, wo du die Links einsetzt, gibt es zwei empfohlene Methoden:
 
-Das Skript startet einen HTTP-Listener auf einem definierten Port (standardmäßig `55555`). Du kannst dann URLs in folgendem Format verwenden:
+### 1. Direkter Aufruf (für Einzelnutzer)
 
-`http://localhost:55555/?open_path=C:/Pfad/Zum/Ordner`
+Du erstellst Links, die direkt auf deinen lokalen Dienst zeigen:
 
-Der `open_path`-Parameter erwartet den **vollständigen Pfad** zu einer Datei oder einem Ordner auf deinem lokalen System oder einem erreichbaren Netzlaufwerk (UNC-Pfad). Der Server nimmt die Anfrage entgegen, validiert den Pfad und verwendet `Invoke-Item`, um den Pfad zu öffnen. Nach dem Öffnen wird eine Bestätigungsseite im Browser angezeigt.
+```
+http://localhost:55555/?open_path=C:/Pfad/Zum/Ordner
+```
 
-Wichtig: Damit die Links funktionieren, muss der Dienst **dauerhaft auf jedem Client aktiv sein**, der mit den Links arbeiten soll. Das bedeutet, dass das PowerShell-Skript beim Windows-Start automatisch im Hintergrund gestartet werden sollte.
+**Vorteil:** Sehr einfach und direkt
+**Nachteil:** Bei Nutzung durch andere (z.B. in SharePoint) erscheint eine Fehlermeldung, falls der Dienst nicht installiert ist.
 
-### Autostart einrichten (empfohlene Methode)
+### 2. Aufruf über Redirect-Seite (empfohlen für Teams & SharePoint)
 
-Für die einfache Integration in den Autostart empfehlen wir die mitgelieferte Datei `Autostart.bat`. Diese erstellt eine Verknüpfung zu einem versteckt startenden Dienstskript im Autostart-Ordner des aktuellen Benutzers.
+Du nutzt einen Link zur GitHub-Seite, die erkennt, ob der lokale Dienst läuft:
 
-**Vorteile dieser Methode:**
+```
+https://mgiesen.github.io/Browser-File-Link/?open_path=C:/Pfad/Zum/Ordner
+```
 
-* Kein Administrator-Zugriff erforderlich
-* Kompatibel mit den meisten Unternehmensrichtlinien
-* Der Dienst startet unauffällig im Hintergrund bei jedem Windows-Login
+**Vorteil:**
 
-Nach der Ausführung von `Autostart.bat` wird der Autostart-Ordner geöffnet, sodass du die Verknüpfung direkt kontrollieren kannst.
+* Wenn der Dienst installiert ist: nahtloser Redirect
+* Wenn **nicht**: Nutzer sieht eine Hilfeseite mit Anleitung
+
+---
 
 ## Einrichtung und Verwendung
 
-1. **Klon das Repository:**
+### Repository klonen oder herunterladen
 
-   ```bash
-   git clone https://github.com/mgiesen/Browser-File-Link.git
-   cd Browser-File-Link
-   ```
+```bash
+git clone https://github.com/mgiesen/Browser-File-Link.git
+cd Browser-File-Link
+```
 
-2. **Aktiviere den Autostart:**
-   Führe `Autostart.bat` per Doppelklick aus, um die Autostart-Verknüpfung einzurichten.
+### Dienst für Autostart einrichten
 
-3. **Verwende die Links:**
-   Erstelle Links in deiner gewünschten Anwendung (z.B. MS Teams, SharePoint) im Format:
-   `http://localhost:55555/?open_path=C:/Pfad/Zu/Deinem/Projektordner`
-   oder für einen UNC-Pfad:
-   `http://55555/?open_path=\\DeinFileserver\Projekte\ProjektX`
+Führe `Autostart.bat` per Doppelklick aus. Der Dienst startet bei jeder Windows-Anmeldung automatisch im Hintergrund. Keine Admin-Rechte nötig.
 
-   *Beachte: Bei UNC-Pfaden und Pfaden mit Leerzeichen ist es ratsam, die URL zu kodieren, wenn die Zielplattform dies nicht automatisch tut.*
+## Links erstellen und verwenden
+
+### Option A: Direkter Link (für persönlichen Gebrauch)
+
+```
+http://localhost:55555/?open_path=C:/Dein/Pfad
+```
+
+### Option B: Redirect-Link (für Teams, SharePoint etc.)
+
+```
+https://mgiesen.github.io/Browser-File-Link/?open_path=\\FirmenServer\Projekte\ProjektX
+```
+
+> Hinweis: Bei UNC-Pfaden und Pfaden mit Leerzeichen empfiehlt sich URL-Encoding.
+
 
 ## Hinweise
 
-* Das Skript muss **lokal auf deinem Rechner ausgeführt** werden, der die Links öffnen soll. Es ist kein zentraler Serverdienst.
-
-* Stell sicher, dass der gewählte Port (Standard: 55555) auf deinem Rechner nicht bereits belegt ist.
-
-* Der Pfad im `open_path`-Parameter muss für deinen Rechner zugänglich sein.
+* Das Skript muss **lokal** auf jedem Rechner laufen, der Links öffnen soll.
+* Stelle sicher, dass der Port `55555` nicht von einer anderen Anwendung blockiert ist.
+* Der Pfad im `open_path`-Parameter muss vom jeweiligen Rechner erreichbar sein.
 
 ## Beitrag
 
-Ideen und Verbesserungen sind jederzeit willkommen! Erstelle gerne einen Issue oder reiche einen Pull Request ein.
+Ideen, Feedback und Pull Requests sind willkommen!
