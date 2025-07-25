@@ -4,6 +4,8 @@ In vielen Unternehmensumgebungen ist es eine Herausforderung, **direkt von Weban
 
 Der **Browser-File-Link** ist eine schlanke PowerShell-Lösung, die genau dieses Problem umgeht. Sie startet einen einfachen, lokalen HTTP-Server, der als Brücke zwischen deinem Browser und deinem lokalen Dateisystem fungiert. So kannst du beispielsweise **Projektordner, Dokumente oder Tools, die auf einem Netzlaufwerk oder Fileserver liegen, bequem aus Anwendungen wie Microsoft Teams, SharePoint-Listen oder internen Webseiten heraus öffnen.**
 
+![Browser-File-Link Funktionsweise](readme/ms-lists-example.png)
+
 ## Funktionsweise
 
 Das Skript startet einen HTTP-Listener auf einem definierten Port (standardmäßig `55555`). Du kannst dann URLs in folgendem Format verwenden:
