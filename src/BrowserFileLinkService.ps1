@@ -63,14 +63,14 @@ try {
                     $command = "Start-Process -FilePath explorer.exe -ArgumentList `"$openPath`""
                     Start-Process powershell.exe -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"$command`""
                     
-                    $statusText = "Der Pfad '$openPath' wurde erfolgreich ge&ouml;ffnet."
+                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
                 }
                 else {
-                    $statusText = "Der Pfad '$openPath' existiert nicht."
+                    $statusText = "Der Pfad existiert nicht."
                 }
             }
             catch {
-                $statusText = "Fehler beim &Ouml;ffnen des Pfads '$openPath': $($_.Exception.Message)"
+                $statusText = "Fehler beim &Ouml;ffnen des Pfads: $($_.Exception.Message)"
             }
         }
         
