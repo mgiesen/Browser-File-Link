@@ -27,8 +27,8 @@ $htmlTemplate = @"
     <style>
         body {{ font-family: sans-serif; text-align: center; margin-top: 50px; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-        .container.status-success {{ background-color: #e6f7e6; }}
-        .container.status-warning {{ background-color: #fffbe6; }}
+        .container.status-success {{ background-color: #a9d1a9ff; }}
+        .container.status-warning {{ background-color: #ffe4b3; }}
         .status {{ font-size: 1.2em; margin-bottom: 20px; }}
         .note {{ color: #666; font-size: 0.9em; }}
         .footer {{ margin-top: 30px; font-size: 0.8em; color: #888; }}
