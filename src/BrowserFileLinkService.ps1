@@ -10,9 +10,7 @@
 #    kann direkt im Browser aufgerufen werden.
 #
 # 2. Redirect-Seite: Dient als Vermittler, um Nutzern ohne lokal ausgeführten Dienst 
-#    eine Hilfestellung zu geben.
-
-# --- KONFIGURATION ---
+#    eine Hilfestellung zu geben. Aufruf: 'https://mgiesen.github.io/Browser-File-Link/?open_path=C:/...'
 
 # Version des Skriptes
 $version = "1.0.0"
@@ -51,7 +49,8 @@ $htmlTemplate = @"
 
 # --- HAUPTPROGRAMM ---
 
-try {
+try 
+{
     $listener = New-Object System.Net.HttpListener
     $listener.Prefixes.Add("http://localhost:$port/")
     $listener.Start()
@@ -59,7 +58,8 @@ try {
     Write-Host "Dienst gestartet auf http://localhost:$port"
     Write-Host "Anfragen von Webseiten sind via CORS erlaubt."
 
-    while ($listener.IsListening) {
+    while ($listener.IsListening) 
+    {
         $context = $listener.GetContext()
         $request = $context.Request
         $response = $context.Response
@@ -67,12 +67,14 @@ try {
         # --- CORS-Handling ---
         # Erlaubt Anfragen von jeder Origin, indem der empfangene Origin-Header zurückgespiegelt wird.
         $requestOrigin = $request.Headers["Origin"]
-        if ($requestOrigin) {
+        if ($requestOrigin) 
+        {
             $response.AddHeader("Access-Control-Allow-Origin", $requestOrigin)
         }
 
         # Behandelt CORS Preflight-Anfragen (OPTIONS).
-        if ($request.HttpMethod -eq "OPTIONS") {
+        if ($request.HttpMethod -eq "OPTIONS") 
+        {
             $response.AddHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
             $response.AddHeader("Access-Control-Allow-Headers", "Content-Type")
             $response.StatusCode = 204 # No Content
@@ -82,63 +84,79 @@ try {
 
         # --- ANFRAGE-ROUTING ---
 
-        if ($request.Url.AbsolutePath -eq "/health") {
+        # Health Check für Redirect Service
+        if ($request.Url.AbsolutePath -eq "/health") 
+        {
             $response.StatusCode = 200
             $buffer = [System.Text.Encoding]::UTF8.GetBytes("OK")
             $response.ContentLength64 = $buffer.Length
             $response.OutputStream.Write($buffer, 0, $buffer.Length)
         }
-        elseif ($request.Url.Query -like "*open_path=*") {
+        elseif ($request.Url.Query -like "*open_path=*") 
+        {
             $openPath = $request.QueryString["open_path"]
             $statusText = ""
 
-            try {
-                if (Test-Path -LiteralPath $openPath) {
-                    # Da die Ausführung des Skriptes im Hintergrund erfolgt, muss ein neuer PowerShell-Prozess gestartet werden, um den Explorer im Vordergrund zu öffnen.
-                    # Die Powershell öffnet langsamer als die CMD, behandelt aber relative UNC-Pfade sicherer.
-                    $command = "& {
-                        Write-Host 'Der Aufruf des Dateipfades wird vorbereitet...';
-                        Start-Process explorer.exe -ArgumentList \`"$openPath\`";
-                        Start-Sleep -Seconds 2
-                    }"
+            if ([string]::IsNullOrEmpty($openPath)) 
+            {
+                $statusText = "Deine Anfrage enth&auml;lt keinen g&uuml;ltigen Pfad"
+                $response.StatusCode = 400 # Bad Request
+            }
+            else 
+            {
+                try 
+                {
+                    if (Test-Path -LiteralPath $openPath) 
+                    {
+                        # Da die Ausführung des Skriptes im Hintergrund erfolgt, muss ein neuer PowerShell-Prozess gestartet werden, um den Explorer im Vordergrund zu öffnen.
+                        # Die Powershell öffnet langsamer als die CMD, behandelt aber relative UNC-Pfade sicherer.
+                        $command = "& {
+                            Write-Host 'Der Aufruf des Dateipfades wird vorbereitet...';
+                            Start-Process explorer.exe -ArgumentList \`"$openPath\`";
+                            Start-Sleep -Seconds 2
+                        }"
 
-                    # Startet einen neuen PowerShell-Prozess ohne Laden des Benutzerprofils (-NoProfile),
-                    Start-Process "powershell.exe" -ArgumentList "-NoProfile -Command $command"
+                        # Startet einen neuen PowerShell-Prozess ohne Laden des Benutzerprofils (-NoProfile),
+                        Start-Process "powershell.exe" -ArgumentList "-NoProfile -Command $command"
 
-                    $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
+                        $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
+                        $response.StatusCode = 200 # OK
+                    }
+                    else 
+                    {
+                        $statusText = "Der angegebene Pfad konnte nicht ge&ouml;ffnet werden"
+                        $response.StatusCode = 404 # Not Found
+                    }
                 }
-                else {
-                    $statusText = "Fehler: Der angegebene Pfad existiert nicht."
-                    $response.StatusCode = 404 # Not Found
+                catch {
+                    $statusText = "Fehler beim &Ouml;ffnen des Pfads: $($_.Exception.Message)"
+                    $response.StatusCode = 500 # Internal Server Error
                 }
             }
-            catch {
-                $statusText = "Fehler beim &Ouml;ffnen des Pfads: $($_.Exception.Message)"
-                $response.StatusCode = 500 # Internal Server Error
-            }
-            
-            $html = [string]::Format($htmlTemplate, $statusText)
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
-            $response.ContentType = "text/html; charset=utf-8"
-            $response.ContentLength64 = $buffer.Length
-            $response.OutputStream.Write($buffer, 0, $buffer.Length)
         }
-        else {
+        else 
+        {
             $response.StatusCode = 400 # Bad Request
-            $statusText = "Ungültige Anfrage. Bitte benutze '?open_path=...'"
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($statusText)
-            $response.ContentLength64 = $buffer.Length
-            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+            $statusText = "Deine Anfrage erf&uuml;llt nicht die erwartete URL Struktur"
         }
+
+        $html = [string]::Format($htmlTemplate, $statusText)
+        $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
+        $response.ContentType = "text/html; charset=utf-8"
+        $response.ContentLength64 = $buffer.Length
+        $response.OutputStream.Write($buffer, 0, $buffer.Length)
         
         $response.OutputStream.Close()
     }
 }
-catch {
+catch 
+{
     Write-Error "Ein kritischer Fehler ist aufgetreten: $($_.Exception.Message)"
 }
-finally {
-    if ($listener -and $listener.IsListening) {
+finally 
+{
+    if ($listener -and $listener.IsListening) 
+    {
         $listener.Stop()
         Write-Host "Dienst wurde beendet."
     }
