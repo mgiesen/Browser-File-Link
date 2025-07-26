@@ -20,11 +20,6 @@ $version = "1.0.0"
 # Der Port, auf dem der lokale Dienst lauscht.
 $port = 55555
 
-# Die Herkunft (Origin) der Redirect-Webseite, die auf den Dienst zugreifen darf.
-# Dies ist eine CORS-Sicherheitsmaßnahme. Direkte Aufrufe aus dem Browser (ohne Origin-Header)
-# sind immer erlaubt.
-$allowedOrigin = "https://mgiesen.github.io"
-
 # HTML-Vorlage für die Antwortseite.
 $htmlTemplate = @"
 <!DOCTYPE html>
@@ -62,24 +57,19 @@ try {
     $listener.Start()
 
     Write-Host "Dienst gestartet auf http://localhost:$port"
-    Write-Host "Anfragen von der Webseite '$allowedOrigin' sind via CORS erlaubt."
+    Write-Host "Anfragen von Webseiten sind via CORS erlaubt."
 
     while ($listener.IsListening) {
         $context = $listener.GetContext()
         $request = $context.Request
         $response = $context.Response
 
-        # CORS-Prüfung: Blockiert Anfragen von unerlaubten Webseiten.
+        # --- CORS-Handling ---
+        # Erlaubt Anfragen von jeder Origin, indem der empfangene Origin-Header zurückgespiegelt wird.
         $requestOrigin = $request.Headers["Origin"]
-        if ($requestOrigin -and $requestOrigin -ne $allowedOrigin) {
-            Write-Warning "Anfrage von unerlaubter Herkunft '$requestOrigin' blockiert."
-            $response.StatusCode = 403 # Forbidden
-            $response.OutputStream.Close()
-            continue
+        if ($requestOrigin) {
+            $response.AddHeader("Access-Control-Allow-Origin", $requestOrigin)
         }
-
-        # Setzt den CORS-Header für gültige Antworten.
-        $response.AddHeader("Access-Control-Allow-Origin", $allowedOrigin)
 
         # Behandelt CORS Preflight-Anfragen (OPTIONS).
         if ($request.HttpMethod -eq "OPTIONS") {
