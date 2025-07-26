@@ -25,13 +25,13 @@ $htmlTemplate = @"
 <head>
     <title>Browser File Link</title>
     <style>
-        body {{ font-family: sans-serif; text-align: center; margin-top: 50px; }}
+        body {{ font-family: sans-serif; text-align: center; margin-top: 50px; color: #fff;}}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-        .container.status-success {{ background-color: #a9d1a9ff; }}
-        .container.status-warning {{ background-color: #ffe4b3; }}
+        .container.status-success {{ background-color: #5cb85c; }}
+        .container.status-warning {{ background-color: #86477A; }}
         .status {{ font-size: 1.2em; margin-bottom: 20px; }}
-        .note {{ color: #666; font-size: 0.9em; }}
-        .footer {{ margin-top: 30px; font-size: 0.8em; color: #888; }}
+        .note {{ font-size: 0.9em; }}
+        .footer {{ margin-top: 30px; font-size: 0.8em; }}
     </style>
     {3}
 </head>
@@ -48,8 +48,7 @@ $htmlTemplate = @"
 
 # --- HAUPTPROGRAMM ---
 
-try 
-{
+try {
     $listener = New-Object System.Net.HttpListener
     $listener.Prefixes.Add("http://localhost:$port/")
     $listener.Start()
@@ -57,8 +56,7 @@ try
     Write-Host "Dienst gestartet auf http://localhost:$port"
     Write-Host "Anfragen von Webseiten sind via CORS erlaubt."
 
-    while ($listener.IsListening) 
-    {
+    while ($listener.IsListening) {
         $context = $listener.GetContext()
         $request = $context.Request
         $response = $context.Response
@@ -66,14 +64,12 @@ try
         # --- CORS-Handling ---
         # Erlaubt Anfragen von jeder Origin, indem der empfangene Origin-Header zurückgespiegelt wird.
         $requestOrigin = $request.Headers["Origin"]
-        if ($requestOrigin) 
-        {
+        if ($requestOrigin) {
             $response.AddHeader("Access-Control-Allow-Origin", $requestOrigin)
         }
 
         # Behandelt CORS Preflight-Anfragen (OPTIONS).
-        if ($request.HttpMethod -eq "OPTIONS") 
-        {
+        if ($request.HttpMethod -eq "OPTIONS") {
             $response.AddHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
             $response.AddHeader("Access-Control-Allow-Headers", "Content-Type")
             $response.StatusCode = 204 # No Content
@@ -90,8 +86,7 @@ try
         $scriptBlock = ""
 
         # Health Check für Redirect Service
-        if ($request.Url.AbsolutePath -eq "/health") 
-        {
+        if ($request.Url.AbsolutePath -eq "/health") {
             $response.StatusCode = 200
             $buffer = [System.Text.Encoding]::UTF8.GetBytes("OK")
             $response.ContentLength64 = $buffer.Length
@@ -99,21 +94,16 @@ try
             $response.OutputStream.Close()
             continue
         }
-        elseif ($request.Url.Query -like "*open_path=*") 
-        {
+        elseif ($request.Url.Query -like "*open_path=*") {
             $openPath = $request.QueryString["open_path"]
 
-            if ([string]::IsNullOrEmpty($openPath)) 
-            {
+            if ([string]::IsNullOrEmpty($openPath)) {
                 $statusText = "Deine Anfrage enth&auml;lt keinen g&uuml;ltigen Pfad"
                 $response.StatusCode = 400 # Bad Request
             }
-            else 
-            {
-                try 
-                {
-                    if (Test-Path -LiteralPath $openPath) 
-                    {
+            else {
+                try {
+                    if (Test-Path -LiteralPath $openPath) {
                         # Da die Ausführung des Skriptes im Hintergrund erfolgt, muss ein neuer PowerShell-Prozess gestartet werden, um den Explorer im Vordergrund zu öffnen.
                         # Die Powershell öffnet langsamer als die CMD, behandelt aber relative UNC-Pfade sicherer.
                         $command = "& {
@@ -131,8 +121,7 @@ try
                         $scriptBlock = '<script type="text/javascript">setTimeout(function() { window.close(); }, 1500);</script>'
                         $response.StatusCode = 200 # OK
                     }
-                    else 
-                    {
+                    else {
                         $statusText = "Der angegebene Pfad konnte nicht ge&ouml;ffnet werden"
                         $response.StatusCode = 404 # Not Found
                     }
@@ -143,8 +132,7 @@ try
                 }
             }
         }
-        else 
-        {
+        else {
             $response.StatusCode = 400 # Bad Request
             $statusText = "Deine Anfrage erf&uuml;llt nicht die erwartete URL Struktur"
         }
@@ -158,14 +146,11 @@ try
         $response.OutputStream.Close()
     }
 }
-catch 
-{
+catch {
     Write-Error "Ein kritischer Fehler ist aufgetreten: $($_.Exception.Message)"
 }
-finally 
-{
-    if ($listener -and $listener.IsListening) 
-    {
+finally {
+    if ($listener -and $listener.IsListening) {
         $listener.Stop()
         Write-Host "Dienst wurde beendet."
     }
