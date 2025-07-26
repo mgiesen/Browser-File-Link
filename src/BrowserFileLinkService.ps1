@@ -27,20 +27,19 @@ $htmlTemplate = @"
     <style>
         body {{ font-family: sans-serif; text-align: center; margin-top: 50px; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .container.status-success {{ background-color: #e6f7e6; }}
+        .container.status-warning {{ background-color: #fffbe6; }}
         .status {{ font-size: 1.2em; margin-bottom: 20px; }}
         .note {{ color: #666; font-size: 0.9em; }}
         .footer {{ margin-top: 30px; font-size: 0.8em; color: #888; }}
     </style>
-    <script type="text/javascript">
-        // Schließt dieses Fenster nach einer kurzen Verzögerung.
-        setTimeout(function() {{ window.close(); }}, 1500);
-    </script>
+    {3}
 </head>
 <body>
-    <div class="container">
+    <div class="container {1}">
         <h1>Browser File Link</h1>
         <p class="status">&raquo;{0}&laquo;</p>
-        <p class="note">Dieses Fenster schlie&szlig;t sich automatisch.</p>
+        <p class="note">{2}</p>
         <p class="footer">&copy; mgiesen | v$version | <a href="https://github.com/mgiesen/Browser-File-Link" target="_blank">GitHub</a></p>
     </div>
 </body>
@@ -83,6 +82,12 @@ try
         }
 
         # --- ANFRAGE-ROUTING ---
+        
+        # Standardwerte für die dynamischen HTML-Teile
+        $statusText = ""
+        $statusClass = "status-warning"
+        $noteText = "Das Fenster bleibt zur Ansicht ge&ouml;ffnet."
+        $scriptBlock = ""
 
         # Health Check für Redirect Service
         if ($request.Url.AbsolutePath -eq "/health") 
@@ -91,11 +96,12 @@ try
             $buffer = [System.Text.Encoding]::UTF8.GetBytes("OK")
             $response.ContentLength64 = $buffer.Length
             $response.OutputStream.Write($buffer, 0, $buffer.Length)
+            $response.OutputStream.Close()
+            continue
         }
         elseif ($request.Url.Query -like "*open_path=*") 
         {
             $openPath = $request.QueryString["open_path"]
-            $statusText = ""
 
             if ([string]::IsNullOrEmpty($openPath)) 
             {
@@ -120,6 +126,9 @@ try
                         Start-Process "powershell.exe" -ArgumentList "-NoProfile -Command $command"
 
                         $statusText = "Der Pfad wurde erfolgreich ge&ouml;ffnet."
+                        $statusClass = "status-success"
+                        $noteText = "Dieses Fenster schlie&szlig;t sich automatisch."
+                        $scriptBlock = '<script type="text/javascript">setTimeout(function() { window.close(); }, 1500);</script>'
                         $response.StatusCode = 200 # OK
                     }
                     else 
@@ -140,7 +149,7 @@ try
             $statusText = "Deine Anfrage erf&uuml;llt nicht die erwartete URL Struktur"
         }
 
-        $html = [string]::Format($htmlTemplate, $statusText)
+        $html = [string]::Format($htmlTemplate, $statusText, $statusClass, $noteText, $scriptBlock)
         $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
         $response.ContentType = "text/html; charset=utf-8"
         $response.ContentLength64 = $buffer.Length
