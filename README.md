@@ -37,9 +37,8 @@ https://mgiesen.github.io/Browser-File-Link/?open_path=\\FirmenServer\Projekte\P
 http://localhost:55555/?open_path=C:/Dein/Pfad
 ```
 
-**Vorteil:** 
-- Sehr einfach und direkt
-- Wenn ein Anwender den Link anklickt, ohne dass der Dienst auf seinem Computer ausgfeührt wird, erhält er eine Fehlermeldung im Browser (z. B. HTTP-Fehler 404), da keine Verbindung zum lokalen Server hergestellt werden kann. Dies kann zu Irritation führen. 
+**Nachteil:** 
+- Wenn ein Anwender den Link anklickt, ohne dass der Dienst auf seinem Computer ausgfeührt wird, erhält er eine Fehlermeldung im Browser (z. B. HTTP-Fehler 404), da keine Verbindung zum lokalen Server hergestellt werden kann. Dies kann zu Irritation führen, insbesondere wenn das Tool nicht bekannt ist.  
 
 ## Einrichtung von Microsofts Lists für die einfache Verwendung
 
