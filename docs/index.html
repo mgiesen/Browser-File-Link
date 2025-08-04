@@ -15,6 +15,7 @@
             --border-color: #e0e0e0;
             --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
+            --success-color: #4CAF50;
         }
 
         body, html {
@@ -136,6 +137,10 @@
             margin-bottom: 20px;
         }
 
+        .info-box.success h2 {
+            color: var(--success-color);
+        }
+
         .info-box p {
             margin-bottom: 20px;
             line-height: 1.6;
@@ -248,6 +253,29 @@
         };
 
         /**
+         * Updates the UI to show a success message.
+         * Hides the initial loading animation and displays the info box.
+         * @param {string} title - The title for the success message box.
+         * @param {string} message - The main success description.
+         * @param {object} options - Optional flags to show/hide specific info paragraphs.
+         * @param {boolean} [options.showGithubLink=true] - Whether to show the GitHub link.
+         * @param {boolean} [options.showRestartInfo=true] - Whether to show the service restart hint.
+         */
+        const showSuccessMessage = (title, message, { showGithubLink = true, showRestartInfo = true } = {}) => {
+            initialContent.classList.add('hidden');
+
+            infoBox.classList.add('success');
+
+            infoBoxTitle.textContent = title;
+            infoBoxMainMessage.innerHTML = message; // Use innerHTML to allow for simple formatting if needed.
+            
+            githubLinkContainer.classList.toggle('hidden', !showGithubLink);
+            restartServiceContainer.classList.toggle('hidden', !showRestartInfo);
+
+            infoBox.classList.add('visible');
+        };
+
+        /**
          * Main function to initiate the connection to the local service.
          * It checks for the service's health and redirects if available,
          * otherwise, it displays an appropriate error message.
@@ -255,13 +283,35 @@
         const initiateConnection = async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const openPath = urlParams.get('open_path');
+            const copyPath = urlParams.get('copy_path');
 
-            if (!openPath) {
+            if (!openPath && !copyPath) {
                 showErrorMessage(
                     'Fehlender Pfad',
                     'Es konnte kein gültiger Pfad zum Öffnen gefunden werden. Bitte stelle sicher, dass du einen Pfad angegeben hast.',
                     { showGithubLink: false, showRestartInfo: false }
                 );
+                return;
+            }
+
+            if (copyPath) {
+                statusText.textContent = 'Kopiere in Zwischenablage...';
+                navigator.clipboard.writeText(copyPath).then(() => {
+                    showSuccessMessage(
+                        'Link kopiert',
+                        'Der Link wurde erfolgreich in die Zwischenablage kopiert kann nun im Explorer eingegeben werden.',
+                        { showGithubLink: false, showRestartInfo: false }
+                    );
+                    setTimeout(() => {
+                        window.close();
+                    }, 1500);
+                }).catch(err => {
+                    showErrorMessage(
+                        'Kopieren fehlgeschlagen',
+                        `Der Link konnte nicht in die Zwischenablage kopiert werden. Fehler: ${err.message}`,
+                        { showGithubLink: false, showRestartInfo: false }
+                    );
+                });
                 return;
             }
 

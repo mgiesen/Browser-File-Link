@@ -40,6 +40,14 @@ http://localhost:55555/?open_path=C:/Dein/Pfad
 **Nachteil:** 
 - Wenn ein Anwender den Link anklickt, ohne dass der Dienst auf seinem Computer ausgfeührt wird, erhält er eine Fehlermeldung im Browser (z. B. HTTP-Fehler 404), da keine Verbindung zum lokalen Server hergestellt werden kann. Dies kann zu Irritation führen, insbesondere wenn das Tool nicht bekannt ist.  
 
+#### Option C: Copy-Link (Alternative, wenn Verteilung des Dienstes nicht möglich)
+
+Falls eine Verteilung und Ausführung des lokalen Dienstes nicht möglich ist, kann der Redirect Service auch dazu genutzt werden, einen Link zu kopieren. Dieser wird in die Zwischenablage kopiert und kann dann manuell im Explorer eingefügt werden.
+
+```
+https://mgiesen.github.io/Browser-File-Link/?copy_path=\\FirmenServer\Projekte\ProjektX
+```
+
 ## Einrichtung von Microsofts Lists für die einfache Verwendung
 
 Für eine einfache und dynamische Verlinkung von Dateipfaden in Microsoft Lists folge diesen Schritten:
