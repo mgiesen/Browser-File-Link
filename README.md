@@ -43,22 +43,37 @@ http://localhost:55555/?open_path=C:/Dein/Pfad
 ## Einrichtung von Microsofts Lists für die einfache Verwendung
 
 Für eine einfache und dynamische Verlinkung von Dateipfaden in Microsoft Lists folge diesen Schritten:
-
 1. Erstelle eine Textspalte, in die der gewünschte Dateipfad eingetragen wird
-1. Erstelle eine Hyperlinkspalte, in der Links zum öffnen der Dateipfade erscheinen
-1. Wähle in den Spalteneinstellungen der Hyperlinkspalte die Formatierungseinstellungen
+1. Wähle in den Spalteneinstellungen dieser Textspalte die Formatierungseinstellungen
 1. Wähle den erweiterten Modus und nutze folgendes JSON Beispiel
-1. Passe den Spaltennamen für den Dateipfad an
-
+   
 ```json
 {
   "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
-  "elmType": "a",
-  "txtContent": "Pfad öffnen",
-  "attributes": {
-    "target": "_blank",
-    "href": "='https://mgiesen.github.io/Browser-File-Link//?open_path=' + [$Projektordner]"
-  }
+  "elmType": "div",
+  "children": [
+    {
+      "elmType": "a",
+      "txtContent": "Pfad öffnen",
+      "attributes": {
+        "target": "_blank",
+        "href": "='https://mgiesen.github.io/Browser-File-Link//?open_path=' + @currentField"
+      },
+      "style": {
+        "display": "=if(@currentField != '', 'inline', 'none')",
+        "color": "blue",
+        "text-decoration": "underline"
+      }
+    },
+    {
+      "elmType": "span",
+      "txtContent": "Fehlender Pfad",
+      "style": {
+        "display": "=if(@currentField == '', 'inline', 'none')",
+        "color": "gray"
+      }
+    }
+  ]
 }
 ```
 
